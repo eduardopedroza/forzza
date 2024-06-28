@@ -6,9 +6,7 @@ const SECRET_KEY = process.env.SUPABASE_KEY || "secret-dev";
 const PORT = 3001;
 
 function getDatabaseUri() {
-  return process.env.NODE_ENV === "test"
-    ? "postgresql:///carnivore_cart_test"
-    : process.env.SUPABASE_URL || "postgresql:///carnivore_cart";
+  return process.env.SUPABASE_URL;
 }
 
 const BCRYPT_WORK_FACTOR = process.env.NODE_ENV === "test" ? 1 : 12;

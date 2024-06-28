@@ -338,17 +338,17 @@ async function getQuote(carrier, quotationRequest) {
 app.post("/shipments/cheapest-quote", async (req, res) => {
   const quotationRequest = {
     origin: {
-      name: "José Luis Medina López",
-      company: "Forzza",
-      email: "luisenciado527@gmail.com",
-      phone: "55-777-162-0349",
-      street: "Calle Peten",
-      number: "1041",
-      district: "Jiutepec",
-      city: "Jiutepec",
-      state: "MR",
-      country: "MX",
-      postalCode: "62553",
+      name: process.env.ORIGIN_NAME,
+      company: process.env.ORIGIN_COMPANY,
+      email: process.env.ORIGIN_EMAIL,
+      phone: process.env.ORIGIN_PHONE,
+      street: process.env.ORIGIN_STREET,
+      number: process.env.ORIGIN_NUMBER,
+      district: process.env.ORIGIN_DISTRICT,
+      city: process.env.ORIGIN_CITY,
+      state: process.env.ORIGIN_STATE,
+      country: process.env.ORIGIN_COUNTRY,
+      postalCode: process.env.ORIGIN_POSTAL_CODE,
       reference: "",
       coordinates: {
         latitude: "",
@@ -424,109 +424,115 @@ app.post("/shipments/cheapest-quote", async (req, res) => {
   }
 });
 
-// app.post("/shipments/create", async (req, res) => {
-//   const { carrier, serviceId, serviceDescription, totalPrice } = req.body;
+app.post("/shipments/create", async (req, res) => {
+  const { carrier, service, totalPrice, userId } = req.body;
 
-//   const shipmentLabelRequest = {
-//     origin: {
-//       name: "José Luis Medina López",
-//       company: "Forzza",
-//       email: "luisenciado527@gmail.com",
-//       phone: "55-777-162-0349",
-//       street: "Calle Peten",
-//       number: "1041",
-//       district: "Jiutepec",
-//       city: "Jiutepec",
-//       state: "MR",
-//       country: "MX",
-//       postalCode: "62553",
-//       reference: "",
-//       coordinates: {
-//         latitude: "",
-//         longitude: "",
-//       },
-//     },
-//     destination: {
-//       name: req.body.displayName,
-//       company: "",
-//       email: req.body.email,
-//       phone: req.body.phone,
-//       street: req.body.streetName,
-//       number: req.body.streetNumber,
-//       district: req.body.colony,
-//       city: req.body.city,
-//       state: mexicoStateCodes[req.body.state],
-//       country: "MX",
-//       postalCode: req.body.postalCode,
-//       reference: "",
-//       coordinates: {
-//         latitude: "",
-//         longitude: "",
-//       },
-//     },
-//     packages: [
-//       {
-//         content: "Pantalones",
-//         amount: 1,
-//         type: "box",
-//         weight: 0.6,
-//         insurance: 0,
-//         declaredValue: 0,
-//         weightUnit: "KG",
-//         lengthUnit: "CM",
-//         dimensions: {
-//           length: 40,
-//           width: 10,
-//           height: 50,
-//         },
-//       },
-//     ],
-//     shipment: {
-//       carrier: "fedex",
-//       type: 1,
-//     },
-//     settings: {
-//       currency: "MXN",
-//     },
-//   };
+  const { data: userData, error } = await supabase
+    .from("users")
+    .select("*")
+    .eq("id", userId);
 
-//   if (!user) {
-//     return res.status(401).json({ error: "User not authenticated" });
-//   }
+  const shipmentLabelRequest = {
+    origin: {
+      name: process.env.ORIGIN_NAME,
+      company: process.env.ORIGIN_COMPANY,
+      email: process.env.ORIGIN_EMAIL,
+      phone: process.env.ORIGIN_PHONE,
+      street: process.env.ORIGIN_STREET,
+      number: process.env.ORIGIN_NUMBER,
+      district: process.env.ORIGIN_DISTRICT,
+      city: process.env.ORIGIN_CITY,
+      state: process.env.ORIGIN_STATE,
+      country: process.env.ORIGIN_COUNTRY,
+      postalCode: process.env.ORIGIN_POSTAL_CODE,
+      reference: "",
+      coordinates: {
+        latitude: "",
+        longitude: "",
+      },
+    },
+    destination: {
+      name: userData.displayName,
+      company: "",
+      email: userData.email,
+      phone: userData.phone,
+      street: userData.streetName,
+      number: userData.streetNumber,
+      district: userData.colony,
+      city: userData.city,
+      state: mexicoStateCodes[userData.state],
+      country: "MX",
+      postalCode: userData.postalCode,
+      reference: "",
+      coordinates: {
+        latitude: "",
+        longitude: "",
+      },
+    },
+    packages: [
+      {
+        content: "Pantalones",
+        amount: 1,
+        type: "box",
+        weight: 0.6,
+        insurance: 0,
+        declaredValue: 0,
+        weightUnit: "KG",
+        lengthUnit: "CM",
+        dimensions: {
+          length: 40,
+          width: 10,
+          height: 50,
+        },
+      },
+    ],
+    shipment: {
+      carrier: carrier,
+      service: service,
+      type: 1,
+    },
+    settings: {
+      currency: "MXN",
+    },
+  };
 
-//   try {
-//     const response = await axios.post(
-//       "https://api-test.envia.com/ship/generate/",
-//       quotationRequest,
-//       {
-//         headers: {
-//           Authorization: `Bearer ${process.env.ENVIA_TEST_TOKEN}`,
-//         },
-//       }
-//     );
+  if (!user) {
+    return res.status(401).json({ error: "User not authenticated" });
+  }
 
-//     const { data, error } = await supabase.from("shipments").insert([
-//       {
-//         user_id: user.id,
-//         carrier,
-//         service_id: serviceId,
-//         service_description: serviceDescription,
-//         total_price: totalPrice,
-//       },
-//     ]);
+  try {
+    const response = await axios.post(
+      "https://api-test.envia.com/ship/generate/",
+      shipmentLabelRequest,
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.ENVIA_TEST_TOKEN}`,
+        },
+      }
+    );
 
-//     if (error) {
-//       return res.status(400).json({ error: error.message });
-//     }
+    const { data, error } = await supabase.from("shipments").insert([
+      {
+        user_id: user.id,
+        carrier,
+        service_id: serviceId,
+        service_description: serviceDescription,
+        total_price: totalPrice,
+      },
+    ]);
 
-//     return res.status(201).json({ data });
-//   } catch (e) {
-//     console.error(e);
-//     return next(e);
-//   }
-// });
+    if (error) {
+      return res.status(400).json({ error: error.message });
+    }
 
-app.post("/payments/create", authenticateSupabase, async (req, res, next) => {
+    return res.status(201).json({ data });
+  } catch (e) {
+    console.error(e);
+    return next(e);
+  }
+});
+
+app.post("/payments/create", async (req, res, next) => {
   const { email, first_name, last_name, phone, items, userId } = req.body;
 
   // Encode the credentials in Base64
